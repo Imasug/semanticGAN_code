@@ -61,7 +61,8 @@ class CelebAMaskDataset(Dataset):
             self.latent_dir = latent_dir
 
             self.data_root = os.path.join(dataroot, 'label_data')
-            train_val_idx_list = [Path(f).name for f in glob(os.path.join(self.data_root, 'image', '*'))]
+            train_val_idx_list = [Path(f).name for f in
+                                  glob(os.path.join(self.data_root, 'image', '**', '*.jpg'), recursive=True)]
             border = int(len(train_val_idx_list) * 0.8)
             train_idx_list = train_val_idx_list[:border]
             val_idx_list = train_val_idx_list[border:]
@@ -76,7 +77,8 @@ class CelebAMaskDataset(Dataset):
                 raise Exception()
         else:
             self.data_root = os.path.join(dataroot, 'unlabel_data')
-            self.idx_list = [Path(f).name for f in glob(os.path.join(self.data_root, 'image', '*'))]
+            self.idx_list = [Path(f).name for f in
+                             glob(os.path.join(self.data_root, 'image', '**', '*.jpg'), recursive=True)]
 
         self.img_dir = os.path.join(self.data_root, 'image')
         self.label_dir = os.path.join(self.data_root, 'label')
