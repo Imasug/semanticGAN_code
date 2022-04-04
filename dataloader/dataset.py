@@ -29,6 +29,8 @@ import torch
 import cv2
 import albumentations
 import albumentations.augmentations as A
+from glob import glob
+from pathlib import Path
 
 
 class HistogramEqualization(object):
@@ -57,43 +59,24 @@ class CelebAMaskDataset(Dataset):
 
         if is_label == True:
             self.latent_dir = latent_dir
+
             self.data_root = os.path.join(dataroot, 'label_data')
+            train_val_idx_list = [Path(f).name for f in glob(os.path.join(self.data_root, 'image', '*'))]
+            border = int(len(train_val_idx_list) * 0.8)
+            train_idx_list = train_val_idx_list[:border]
+            val_idx_list = train_val_idx_list[border:]
 
             if phase == 'train':
-                if limit_size is None:
-                    self.idx_list = np.loadtxt(os.path.join(self.data_root, 'train_full_list.txt'), dtype=str)
-                else:
-                    self.idx_list = np.loadtxt(os.path.join(self.data_root,
-                                                            'train_{}_list.txt'.format(limit_size)), dtype=str).reshape(
-                        -1)
+                self.idx_list = train_idx_list
             elif phase == 'val':
-                if limit_size is None:
-                    self.idx_list = np.loadtxt(os.path.join(self.data_root, 'val_full_list.txt'), dtype=str)
-                else:
-                    self.idx_list = np.loadtxt(os.path.join(self.data_root,
-                                                            'val_{}_list.txt'.format(limit_size)), dtype=str).reshape(
-                        -1)
+                self.idx_list = val_idx_list
             elif phase == 'train-val':
-                # concat both train and val
-                if limit_size is None:
-                    train_list = np.loadtxt(os.path.join(self.data_root, 'train_full_list.txt'), dtype=str)
-                    val_list = np.loadtxt(os.path.join(self.data_root, 'val_full_list.txt'), dtype=str)
-                    self.idx_list = list(train_list) + list(val_list)
-                else:
-                    train_list = np.loadtxt(os.path.join(self.data_root,
-                                                         'train_{}_list.txt'.format(limit_size)), dtype=str).reshape(-1)
-                    val_list = np.loadtxt(os.path.join(self.data_root,
-                                                       'val_{}_list.txt'.format(limit_size)), dtype=str).reshape(-1)
-                    self.idx_list = list(train_list) + list(val_list)
+                self.idx_list = train_val_idx_list
             else:
-                self.idx_list = np.loadtxt(os.path.join(self.data_root, 'test_list.txt'), dtype=str)
+                raise Exception()
         else:
             self.data_root = os.path.join(dataroot, 'unlabel_data')
-            if unlabel_limit_size is None:
-                self.idx_list = np.loadtxt(os.path.join(self.data_root, 'unlabel_list.txt'), dtype=str)
-            else:
-                self.idx_list = np.loadtxt(
-                    os.path.join(self.data_root, 'unlabel_{}_list.txt'.format(unlabel_limit_size)), dtype=str)
+            self.idx_list = [Path(f).name for f in glob(os.path.join(self.data_root, 'image', '*'))]
 
         self.img_dir = os.path.join(self.data_root, 'image')
         self.label_dir = os.path.join(self.data_root, 'label')
@@ -161,11 +144,11 @@ class CelebAMaskDataset(Dataset):
         if idx >= self.data_size:
             idx = idx % (self.data_size)
         img_idx = self.idx_list[idx]
-        img_pil = Image.open(os.path.join(self.img_dir, img_idx)).convert('RGB').resize(
+        img_pil = Image.open(os.path.join(self.img_dir, f'{img_idx}.jpg')).convert('RGB').resize(
             (self.resolution, self.resolution))
 
         if self.is_label:
-            mask_pil = Image.open(os.path.join(self.label_dir, img_idx)).convert('L').resize(
+            mask_pil = Image.open(os.path.join(self.label_dir, f'{img_idx}.png')).convert('L').resize(
                 (self.resolution, self.resolution), resample=0)
             if (self.phase == 'train' or self.phase == 'train-val') and self.aug:
                 augmented = self.aug_t(image=np.array(img_pil), mask=np.array(mask_pil))
