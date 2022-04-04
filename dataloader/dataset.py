@@ -163,10 +163,10 @@ class CelebAMaskDataset(Dataset):
         img_idx = self.idx_list[idx]
         img_pil = Image.open(os.path.join(self.img_dir, img_idx)).convert('RGB').resize(
             (self.resolution, self.resolution))
-        mask_pil = Image.open(os.path.join(self.label_dir, img_idx)).convert('L').resize(
-            (self.resolution, self.resolution), resample=0)
 
         if self.is_label:
+            mask_pil = Image.open(os.path.join(self.label_dir, img_idx)).convert('L').resize(
+                (self.resolution, self.resolution), resample=0)
             if (self.phase == 'train' or self.phase == 'train-val') and self.aug:
                 augmented = self.aug_t(image=np.array(img_pil), mask=np.array(mask_pil))
                 aug_img_pil = Image.fromarray(augmented['image'])
@@ -192,6 +192,9 @@ class CelebAMaskDataset(Dataset):
                 'mask': mask_tensor
             }
         else:
+            # TODO 合っているか？
+            if self.unlabel_transform is None:
+                self.unlabel_transform = self.preprocess
             img_tensor = self.unlabel_transform(img_pil)
             return {
                 'image': img_tensor,
